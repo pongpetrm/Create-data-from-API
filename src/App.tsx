@@ -48,12 +48,8 @@ async function computeUserSummary(data: UserData[]): Promise<Record<string, Data
 
     // Update age range
     const age = user.age;
-    if (!grouped[department].ageRange) {
-      grouped[department].ageRange = `${age}-${age}`;
-    } else {
-      const [minAge, maxAge] = grouped[department].ageRange.split('-').map(Number);
-      grouped[department].ageRange = `${Math.min(minAge, age)}-${Math.max(maxAge, age)}`;
-    }
+    const [minAge, maxAge] = grouped[department].ageRange.split('-').map(Number);
+    grouped[department].ageRange = !grouped[department].ageRange? `${age}-${age}` : `${Math.min(minAge, age)}-${Math.max(maxAge, age)}`;
 
     // Update hair color count
     const hairColor = user.hair.color;
