@@ -4,23 +4,25 @@
 ```typescript
 import { useEffect, useState } from "react";
 import axios from "axios";
-interface DataUser {
-  gender: string,
-  age: number,
+
+// Define interfaces
+interface UserData {
+  gender: string;
+  age: number;
   hair: {
-    color: string
-  },
-  firstName: string,
-  lastName: string,
+    color: string;
+  };
+  firstName: string;
+  lastName: string;
   address: {
-    postalCode: string
-  },
+    postalCode: string;
+  };
   company: {
-    department: string
-  }
+    department: string;
+  };
 }
 
-interface DataSummary  {
+interface DataSummary {
   male: number;
   female: number;
   ageRange: string;
@@ -28,7 +30,8 @@ interface DataSummary  {
   addressUser: Record<string, string>;
 }
 
-async function UserSummary(data : DataUser[]) {
+// Function to compute user summary
+async function computeUserSummary(data: UserData[]): Promise<Record<string, DataSummary>> {
   const grouped: Record<string, DataSummary> = {};
 
   data.forEach(user => {
@@ -44,12 +47,10 @@ async function UserSummary(data : DataUser[]) {
       };
     }
 
-    if (user.gender === 'male') {
-      grouped[department].male++;
-    } else {
-      grouped[department].female++;
-    }
+    // Increment male/female count
+    user.gender === 'male' ? grouped[department].male++ : grouped[department].female++;
 
+    // Update age range
     const age = user.age;
     if (!grouped[department].ageRange) {
       grouped[department].ageRange = `${age}-${age}`;
@@ -58,82 +59,59 @@ async function UserSummary(data : DataUser[]) {
       grouped[department].ageRange = `${Math.min(minAge, age)}-${Math.max(maxAge, age)}`;
     }
 
+    // Update hair color count
     const hairColor = user.hair.color;
-    if (!grouped[department].hair[hairColor]) {
-      grouped[department].hair[hairColor] = 0;
-    }
-    grouped[department].hair[hairColor]++;
+    grouped[department].hair[hairColor] = (grouped[department].hair[hairColor] || 0) + 1;
 
+    // Map user to address
     grouped[department].addressUser[`${user.firstName}${user.lastName}`] = user.address.postalCode;
-  })
+  });
 
-  return grouped
+  return grouped;
 }
 
-function App() {
-  const [dataInfo, setDataInfo] = useState<Record<string, DataSummary>>({})
+export default function UserSummaryApp() {
+  const [dataInfo, setDataInfo] = useState<Record<string, DataSummary>>({});
 
   useEffect(() => {
-    const fetchTodos = async () => {
+    const fetchData = async () => {
       try {
         const response = await axios.get<any>('https://dummyjson.com/users');
-        const UserSummaryData = await UserSummary(response?.data?.users)
-        setDataInfo(UserSummaryData)
+        const userSummaryData = await computeUserSummary(response?.data?.users || []);
+        setDataInfo(userSummaryData);
       } catch (error) {
-        console.error('Error fetching todos:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchTodos();
+    fetchData();
   }, []);
 
   return (
-    <div className="App" style={ { padding: 20 } }>
-      {
-        Object.keys(dataInfo).map((key, index) =>
-          <div key={index} style={ { padding: 20, border: '2px solid #eee', borderRadius: 10, marginBottom: 15 } }>
-            
-            <div>
-            {index+1}) Department: {key}
-            </div>
-            <div>
-              male: {dataInfo[key]?.male}
-            </div>
-            <div>
-              female: {dataInfo[key]?.female}
-            </div>
-            <div>
-              ageRange: {dataInfo[key]?.ageRange}
-            </div>
-            <div style={{marginTop: 10}}>
-              hair:
-            </div>
-            <div style={ { padding: 10, border: '2px solid #eee', borderRadius: 5 } }>
-              {
-                Object.keys(dataInfo[key]?.hair).map((keyHair, indexHair) =>
-                  <div key={indexHair}>
-                    {keyHair}: {dataInfo[key]?.hair[keyHair]}
-                  </div>
-                )
-              }
-            </div>
-            <div style={{marginTop: 10}}>
-              addressUser:
-            </div>
-            <div style={ { padding: 10, border: '2px solid #eee', borderRadius: 5 } }>
-              {
-                Object.keys(dataInfo[key]?.addressUser).map((keyAddressUser, indexAddressUser) =>
-                  <div key={indexAddressUser}>
-                    {keyAddressUser}: {dataInfo[key]?.addressUser[keyAddressUser]}
-                  </div>
-                )
-              }
-            </div>
+    <div className="App" style={{ padding: 20 }}>
+      {Object.entries(dataInfo).map(([department, summary], index) => (
+        <div key={index} style={{ padding: 20, border: '2px solid #eee', borderRadius: 10, marginBottom: 15 }}>
+          <div>{index + 1}) Department: {department}</div>
+          <div>male: {summary.male}</div>
+          <div>female: {summary.female}</div>
+          <div>ageRange: {summary.ageRange}</div>
+          <div style={{ marginTop: 10 }}>hair:</div>
+          <div style={{ padding: 10, border: '2px solid #eee', borderRadius: 5 }}>
+            {Object.entries(summary.hair).map(([color, count], index) => (
+              <div key={index}>{color}: {count}</div>
+            ))}
           </div>
-        )
-      }
+          <div style={{ marginTop: 10 }}>addressUser:</div>
+          <div style={{ padding: 10, border: '2px solid #eee', borderRadius: 5 }}>
+            {Object.entries(summary.addressUser).map(([name, postalCode], index) => (
+              <div key={index}>{name}: {postalCode}</div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-export default App;
+
+
